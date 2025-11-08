@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prediction Results</title>
+</head>
+<body>
+    <h1>Prediction Results</h1>
+
+    {% if single %}
+        <h2>Prediction: {{ prediction }}</h2>
+    {% else %}
+        {% for table in tables %}
+            {{ table|safe }}
+        {% endfor %}
+    {% endif %}
+
+    <a href="{{ url_for('index') }}">Back</a>
+</body>
+</html>

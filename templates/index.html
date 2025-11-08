@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TCP RST Attack Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>TCP RST Attack Detection Dashboard</h1>
+
+    <h2>Upload CSV for Batch Prediction</h2>
+    <form action="/" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" required>
+        <button type="submit">Predict</button>
+    </form>
+
+    <h2>Single Flow Prediction</h2>
+    <form action="/" method="post">
+        <label>flow_duration:</label><input type="number" step="any" name="flow_duration" required><br>
+        <label>total_fwd_packets:</label><input type="number" name="total_fwd_packets" required><br>
+        <label>total_bwd_packets:</label><input type="number" name="total_bwd_packets" required><br>
+        <label>fin_count:</label><input type="number" name="fin_count" required><br>
+        <label>syn_count:</label><input type="number" name="syn_count" required><br>
+        <label>ack_count:</label><input type="number" name="ack_count" required><br>
+        <label>rst_count:</label><input type="number" name="rst_count" required><br>
+        <button type="submit">Predict</button>
+    </form>
+</body>
+</html>
