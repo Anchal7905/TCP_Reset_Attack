@@ -1,49 +1,71 @@
 """
-predict_attack.py
------------------
-Loads the trained model and predicts whether a given network flow
-is a TCP Reset (RST) attack or normal.
-
-This version is adapted for Flask integration.
+ml/predict_attack.py
+--------------------
+Handles model loading and prediction logic for both single and batch inputs.
+Supports dynamic feature alignment for uploaded CSVs.
 """
 
 import os
 import joblib
 import pandas as pd
 
-# Paths
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "rst_model.pkl")
+# Define required features (same as training)
+REQUIRED_FEATURES = [
+    "flow_duration",
+    "total_fwd_packets",
+    "total_bwd_packets",
+    "fin_count",
+    "syn_count",
+    "ack_count",
+    "rst_count"
+]
 
-# Load model once when module is imported
-model = joblib.load(MODEL_PATH)
+# Path to saved model
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "rst_model.pkl")
 
-# List of features used for training
-FEATURES = ["flow_duration", "total_fwd_packets", "total_bwd_packets",
-            "fin_count", "syn_count", "ack_count", "rst_count"]
+# Load model once when module loads
+try:
+    MODEL = joblib.load(MODEL_PATH)
+except Exception as e:
+    MODEL = None
+    print(f"[!] Warning: Could not load model from {MODEL_PATH}: {e}")
 
+def align_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensures that the uploaded CSV has all required features.
+    Missing columns are added with 0 values.
+    Extra columns are dropped.
+    """
+    for feature in REQUIRED_FEATURES:
+        if feature not in df.columns:
+            df[feature] = 0  # default fill for missing
+    df = df[REQUIRED_FEATURES]
+    return df
 
 def predict_single(flow_features: dict) -> str:
     """
-    Predict a single network flow.
-    Returns: "TCP Reset Attack" or "Normal"
+    Predicts for a single flow.
     """
-    df = pd.DataFrame([flow_features], columns=FEATURES)
-    pred = model.predict(df)[0]
-    return "TCP Reset Attack" if pred == 1 else "Normal"
+    if MODEL is None:
+        raise ValueError("Model not loaded.")
+    df = pd.DataFrame([flow_features])
+    df = align_features(df)
+    pred = MODEL.predict(df)[0]
+    return "TCP Reset Attack" if pred == 1 else "Normal Traffic"
 
-
-def predict_batch(df: pd.DataFrame) -> list:
+def predict_batch(csv_path: str):
     """
-    Predict a batch of flows from a DataFrame.
-    Returns a list of predictions ("TCP Reset Attack" / "Normal")
+    Predicts for a batch CSV file.
     """
-    df = df[FEATURES]  # Ensure correct column order
-    preds = model.predict(df)
-    return ["TCP Reset Attack" if p == 1 else "Normal" for p in preds]
+    if MODEL is None:
+        raise ValueError("Model not loaded.")
+    df = pd.read_csv(csv_path)
+    df = align_features(df)
+    predictions = MODEL.predict(df)
+    return ["TCP Reset Attack" if p == 1 else "Normal Traffic" for p in predictions]
 
-
-# Example usage (only runs when script is executed directly)
 if __name__ == "__main__":
+    # Example single test
     test_flow = {
         "flow_duration": 500,
         "total_fwd_packets": 20,
@@ -53,6 +75,4 @@ if __name__ == "__main__":
         "ack_count": 10,
         "rst_count": 0
     }
-
-    prediction = predict_single(test_flow)
-    print(f"[+] Prediction: {prediction}")
+    print(predict_single(test_flow))
